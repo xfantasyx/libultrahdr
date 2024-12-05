@@ -141,6 +141,8 @@ endif()
 if(CMAKE_CROSSCOMPILING AND UHDR_ENABLE_INSTALL)
   set(UHDR_ENABLE_INSTALL FALSE) # disable install and uninstall targets during cross compilation.
   message(STATUS "Install and uninstall targets - Disabled")
+
+  message(FATAL_ERROR "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
 endif()
 
 if(UHDR_BUILD_FUZZERS AND NOT UHDR_BUILD_DEPS)
@@ -160,6 +162,7 @@ if(UHDR_BUILD_DEPS AND UHDR_ENABLE_INSTALL)
                                  # from source, its best to disallow system wide installation of
                                  # uhdr to avoid possible abi/api conflicts.
   message(STATUS "Install and uninstall targets - Disabled")
+  message(FATAL_ERROR "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR")
 endif()
 
 ###########################################################
@@ -412,7 +415,7 @@ endif()
 
 # libjpeg-turbo
 if(NOT UHDR_BUILD_DEPS)
-  find_package(JPEG QUIET)
+  find_package(libjpeg-turbo QUIET)
   if(NOT JPEG_FOUND)
     message(FATAL_ERROR "Could NOT find JPEG (missing: JPEG_LIBRARIES JPEG_INCLUDE_DIRS),\
                          retry after installing JPEG library at sysroot or try 'cmake -DUHDR_BUILD_DEPS=1'")
@@ -579,6 +582,7 @@ target_include_directories(${IMAGEIO_TARGET_NAME} PRIVATE
   "${THIRD_PARTY_DIR}/image_io/includes"
   "${THIRD_PARTY_DIR}/image_io/src/modp_b64"
   "${THIRD_PARTY_DIR}/image_io/src/modp_b64/modp_b64")
+
 
 set(UHDR_CORE_LIB_NAME core)
 add_library(${UHDR_CORE_LIB_NAME} STATIC ${UHDR_CORE_SRCS_LIST})
@@ -747,6 +751,12 @@ endif()
 target_link_libraries(${UHDR_TARGET_NAME} PRIVATE ${JPEG_LIBRARIES})
 set_target_properties(${UHDR_TARGET_NAME}
                       PROPERTIES PUBLIC_HEADER ultrahdr_api.h)
+
+target_include_directories( ${UHDR_TARGET_NAME}
+  INTERFACE
+      $<INSTALL_INTERFACE:include>
+)
+
 if(BUILD_SHARED_LIBS)
   # If target is STATIC no need to set VERSION and SOVERSION
   set_target_properties(${UHDR_TARGET_NAME}
@@ -773,6 +783,12 @@ if(BUILD_SHARED_LIBS)
     set_target_properties(${UHDR_TARGET_NAME_STATIC}
                           PROPERTIES OUTPUT_NAME ${UHDR_TARGET_NAME})
   endif()
+
+  target_include_directories( ${UHDR_TARGET_NAME_STATIC}
+    INTERFACE
+        $<INSTALL_INTERFACE:include>
+  )
+
 endif()
 
 if(UHDR_BUILD_JAVA)
@@ -788,44 +804,90 @@ if(UHDR_BUILD_JAVA)
   add_jar(uhdr-java SOURCES ${UHDR_JAVA_SRCS_LIST} ${UHDR_APP_SRC} ENTRY_POINT UltraHdrApp)
 endif()
 
-if(UHDR_ENABLE_INSTALL)
-  if(NOT(MSVC OR XCODE))
-    include(GNUInstallDirs)
+# if(UHDR_ENABLE_INSTALL)
+#   if(NOT(MSVC OR XCODE))
+#     include(GNUInstallDirs)
 
-    # pkg-config: libuhdr.pc
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/libuhdr.pc.in"
-                   "${CMAKE_CURRENT_BINARY_DIR}/libuhdr.pc" @ONLY NEWLINE_STYLE UNIX)
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libuhdr.pc"
-            DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
-    install(TARGETS ${UHDR_TARGET_NAME} ${UHDR_TARGET_NAME_STATIC} ${UHDR_SAMPLE_APP}
-            RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-            LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-            PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-    if(BUILD_SHARED_LIBS)
-      if(APPLE)
-        install(CODE "message(STATUS \"You may need to add path \"
-                                     \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ \"
-                                     \"to DYLD_FALLBACK_LIBRARY_PATH if binaries are unable to load uhdr library \n\"
-                                     \"e.g. export DYLD_FALLBACK_LIBRARY_PATH=$DYLD_FALLBACK_LIBRARY_PATH:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ \")")
-      elseif(UNIX)
-        install(CODE "message(STATUS \"You may need to add path \"
-                                     \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ \"
-                                     \"to LD_LIBRARY_PATH if binaries are unable to load uhdr library \n\"
-                                     \"e.g. export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ \")")
-      endif()
-    endif()
+#     # pkg-config: libuhdr.pc
+#     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/libuhdr.pc.in"
+#                    "${CMAKE_CURRENT_BINARY_DIR}/libuhdr.pc" @ONLY NEWLINE_STYLE UNIX)
+#     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libuhdr.pc"
+#             DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+#     install(TARGETS ${UHDR_TARGET_NAME} ${UHDR_TARGET_NAME_STATIC} ${UHDR_SAMPLE_APP}
+#             RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+#             LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+#             ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+#             PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+#     if(BUILD_SHARED_LIBS)
+#       if(APPLE)
+#         install(CODE "message(STATUS \"You may need to add path \"
+#                                      \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ \"
+#                                      \"to DYLD_FALLBACK_LIBRARY_PATH if binaries are unable to load uhdr library \n\"
+#                                      \"e.g. export DYLD_FALLBACK_LIBRARY_PATH=$DYLD_FALLBACK_LIBRARY_PATH:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ \")")
+#       elseif(UNIX)
+#         install(CODE "message(STATUS \"You may need to add path \"
+#                                      \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ \"
+#                                      \"to LD_LIBRARY_PATH if binaries are unable to load uhdr library \n\"
+#                                      \"e.g. export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ \")")
+#       endif()
+#     endif()
 
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-                   "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
-    add_custom_target(uninstall
-      COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+#     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+#                    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
+#     add_custom_target(uninstall
+#       COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
-    # packaging
-    if(UHDR_BUILD_PACKAGING)
-      include(cmake/package.cmake)
-      include(CPack)
-    endif()
+#     # packaging
+#     if(UHDR_BUILD_PACKAGING)
+#       include(cmake/package.cmake)
+#       include(CPack)
+#     endif()
 
-  endif()
-endif()
+#   endif()
+# endif()
+
+# ==============================================================================
+# install
+# ==============================================================================
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/libuhdrConfigVersion.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+install(TARGETS ${UHDR_TARGET_NAME} ${UHDR_TARGET_NAME_STATIC} ${UHDR_SAMPLE_APP}
+        EXPORT libuhdrTargets
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+
+
+install(
+  EXPORT 
+    libuhdrTargets 
+  FILE 
+    libuhdrTargets.cmake 
+  DESTINATION 
+    cmake)
+
+
+
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/libuhdrConfig.cmake
+  INSTALL_DESTINATION "cmake"
+)
+
+
+# Install files
+INSTALL(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/libuhdrConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/libuhdrConfigVersion.cmake
+        DESTINATION "cmake"
+        )

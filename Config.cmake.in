@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+include(${CMAKE_CURRENT_LIST_DIR}/libuhdrTargets.cmake)
+
+
+if(@libjpeg-turbo_FOUND@)
+    find_dependency(libjpeg-turbo)
+endif()
+
+set(libuhdr_FOUND TRUE)
+
+get_target_property(LIBUHDR_INCLUDE_DIR @UHDR_TARGET_NAME@ INTERFACE_INCLUDE_DIRECTORIES)
+
+set(LIBUHDR_LIBRARY @UHDR_TARGET_NAME@)
